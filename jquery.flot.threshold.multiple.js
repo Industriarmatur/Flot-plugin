@@ -23,7 +23,7 @@ Internally, the plugin works by splitting the data into different series, one fo
   
     
   function init(plot){
-   
+  	
     function plotWithMultipleThresholds(plot,s,datapoints){
 			if(s.data && s.data.length > 0 && s.constraints && s.constraints.length>0){
 			   var series = new Graph(s.data,s.constraints).getPlotData();
@@ -32,20 +32,21 @@ Internally, the plugin works by splitting the data into different series, one fo
 				ss.constraints = [];
 				ss.data = series[i].data;
 				ss.color = series[i].color;
+				ss.label = s.constraints[i].label;
 				plot.getData().push(ss);
 			}
 		}
     }
-	
+ 
 	function Graph(dataset, constraints) {
 	this._constraints = _getSortedConstraints(dataset,constraints);
 	this._dataset = dataset;
 	this._plotData = [];
-		
+  
 	this.getPlotData = function() {
-		
+  
 		if(this._constraints.length == 0)return [];
-		
+  
 		for ( var i = this._constraints.length - 1; i >= 0 ; i--) {
 			var constraint = this._constraints[i];
 			if(null != constraint.threshold){
@@ -64,14 +65,19 @@ Internally, the plugin works by splitting the data into different series, one fo
 		this._data = [];
 		this._getPointOnThreshold = _getPointOnThreshold;
 		this.using = using ;
-		
+  
 		function using(threshold, evaluate) {
 			var count = 0;
 			for ( var i = 0; i < this._originalPoints.length; i++) {
 				var currentPoint = this._originalPoints[i];
+				
+				if(currentPoint[1] == null){
+					this._data[count++] = null;
+					continue;
+				}
+
 				if (evaluate(currentPoint[1],threshold)) {
-					if (i > 0
-							&& (this._data.length == 0 || this._data[count - 1] == null)) {
+					if (i > 0 && (this._data.length == 0 || this._data[count - 1] == null) && this._originalPoints[i - 1][1] != null) {
 						this._data[count++] = this._getPointOnThreshold(threshold,this._originalPoints[i - 1], currentPoint);
 					}
 					this._data[count++] = currentPoint;
@@ -85,7 +91,7 @@ Internally, the plugin works by splitting the data into different series, one fo
 			}
 			return this._data;
 		}
-		
+  
 			function _getPointOnThreshold(threshold, prevP, currP) {
 			var currentX = currP[0];
 			var currentY = currP[1];
@@ -102,11 +108,11 @@ Internally, the plugin works by splitting the data into different series, one fo
 	}
 
 	function _getSortedConstraints(originalpoints,constraints){
-		
+  
 		var dataRange = _findMaxAndMin(originalpoints);
-		
+  
 		if(undefined == dataRange)return [];
-		
+  
 		var max = dataRange.max;
 		var min = dataRange.min;
 		var thresholdRanges = [];
@@ -137,12 +143,12 @@ Internally, the plugin works by splitting the data into different series, one fo
 		QuickSort(arr,function(p1,p2){return p1 < p2;});
 		return { min:arr[0],max:arr[arr.length-1]};
 	}
-	
+ 
 }
 
     function QuickSort(dataset,comparator){
 		sort(dataset, 0, dataset.length-1, comparator);
-		
+  
 		function sort(array, left, right,comparator){
 			if(right > left){
 			   var pivotIndex = Math.floor(( left + right )/2);
@@ -164,7 +170,7 @@ Internally, the plugin works by splitting the data into different series, one fo
 				}
 			}
 			swap(array,storeIndex,right);
-		
+  
 		return storeIndex;
 	   }
 	   
@@ -178,7 +184,7 @@ Internally, the plugin works by splitting the data into different series, one fo
 
     plot.hooks.processRawData.push(plotWithMultipleThresholds);
  }
-  
+ 	
 $.plot.plugins.push({
         init: init,
         name: 'multiple.threshold',
